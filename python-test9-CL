@@ -1,0 +1,117 @@
+import random
+import re
+import time
+import urllib3
+import urllib3 as ulb
+import urllib.request
+from selenium import webdriver
+
+from urllib.request import urlopen,Request
+#from urllib.request import urlopen,Request
+
+
+
+# 收集到的常用Header
+
+
+my_headers = [
+        "Mozilla/5.0 (Windows NT 6.3; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36",
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/35.0.1916.153 Safari/537.36",
+        "Mozilla/5.0 (Windows NT 6.1; WOW64; rv:30.0) Gecko/20100101 Firefox/30.0",
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.75.14 (KHTML, like Gecko) Version/7.0.3 Safari/537.75.14",
+        "Mozilla/5.0 (compatible; MSIE 10.0; Windows NT 6.2; Win64; x64; Trident/6.0)",
+        'Mozilla/5.0 (Windows; U; Windows NT 5.1; it; rv:1.8.1.11) Gecko/20071127 Firefox/2.0.0.11',
+        'Opera/9.25 (Windows NT 5.1; U; en)',
+        'Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1; SV1; .NET CLR 1.1.4322; .NET CLR 2.0.50727)',
+        'Mozilla/5.0 (compatible; Konqueror/3.5; Linux) KHTML/3.5.5 (like Gecko) (Kubuntu)',
+        'Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.8.0.12) Gecko/20070731 Ubuntu/dapper-security Firefox/1.5.0.12',
+        'Lynx/2.8.5rel.1 libwww-FM/2.14 SSL-MM/1.4.1 GNUTLS/1.2.9',
+        "Mozilla/5.0 (X11; Linux i686) AppleWebKit/535.7 (KHTML, like Gecko) Ubuntu/11.04 Chromium/16.0.912.77 Chrome/16.0.912.77 Safari/535.7",
+        "Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:10.0) Gecko/20100101 Firefox/10.0 "
+    ]
+
+
+proxy_list = [
+    '110.86.137.51:9999',
+    '58.253.156.203:9999',
+    '27.46.20.67:8888',
+
+    ]
+
+
+def getNoveContent():
+    #设置暂停时间为t秒
+    t=1
+
+
+
+
+    #随机从ip列表中选择一个ip，header
+    proxy = random.choice(proxy_list)
+    header = random.choice(my_headers)
+
+    print(proxy)
+    print(header)
+
+    #基于选择的IP构建连接
+    '''
+    urlhandle = urllib.request.ProxyHandler({'http':proxy})
+    opener = urllib.request.build_opener(urlhandle)
+    urllib.request.install_opener(opener)
+    '''
+
+    #http://www.tta25.com/novellist.x?classid=1&page=2
+    #https://cl.4t9a.com/thread0806.php?fid=20&search=&page=2
+    #爬的地址
+    for  urlnum in range(20,22):
+        url = "https://cl.x9oa.com/thread0806.php?fid=20&search=&page="+str(urlnum)
+
+        req = Request(url, headers={
+            "User-agent":random.choice(my_headers)
+        })
+
+        req.add_header("User-agent",random.choice(my_headers))
+        res = urlopen(req).read()  # get
+        res = res.decode("gbk")
+        #html = urllib.request.urlopen("http://www.tta25.com/novellist.x?classid=1&page=2").read()
+        #html = html.decode("utf-8")  # 转成该网址的格式
+
+        #<a href="http://www.tta25.com/pn.x?stype=novel&amp;id=117917" title="跟熟女小姐完美性爱" target="_blank"><span class="xslist text-bg-c">跟熟女小姐完美性爱　　<font color="#808080">09-09</font></span></a>
+        #<a href="htm_data/1907/20/3597144.html" target="_blank" id="">領證前才發現女友是他媽的賤貨&nbsp; &nbsp;  作者：威帶言</a>
+        #reg =r'<a href="(.*?)" title=".*?" target="_blank"><span class="xslist text-bg-c">(.*?)　　<font color="#808080">09-09</font></span></a>'
+        reg=r'<a href="(.*?)" target="_blank" id="">(.*?)</a>'
+        reg = re.compile(reg)
+        urls = re.findall(reg, res)
+        print(urls)
+
+        #设置selenium
+        driver = webdriver.Chrome()
+
+        for url in urls:
+            time.sleep(t)
+            chapter_url = "https://cl.x9oa.com/"+url[0] #章节的超链接
+            chapter_title = url[1]  #章节的名字
+            print(chapter_url)
+            print(chapter_title)
+
+
+            try:
+                chapter_html = driver.get(chapter_url)
+                print('chapter_html', type(chapter_html))
+                # str.chapter_html = chapter_html.decode(encoding="gbk")
+                # <div class="tpc_content do_not_catch">  <tr class="tr1">
+                content = driver.find_element_by_xpath(
+                    '//*[@id="main"]/div[3]/table/tbody/tr[1]/th[2]/table/tbody/tr/td/div[4]')
+                print(content.get_attribute('class'))  # 获取属性
+                print(content.get_attribute('href'))  # 获取属性
+                print(content.text)  # 获取文本值
+                f = open('E:\python\爬虫小说\CL\{}.doc'.format(chapter_title), mode='w', encoding='utf-8')
+                f.write(content.text)
+            except OSError:
+                pass
+            continue
+            f.close()
+        #chapter_html = urllib.request.urlopen(chapter_url).read()   #正文内容源代码
+        #chapter_html = chapter_html.decode("gbk")
+
+getNoveContent()
